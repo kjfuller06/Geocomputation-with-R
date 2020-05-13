@@ -56,7 +56,8 @@ plot(st_geometry(india), expandBB = c(0, 0.2, 0.1, 1), col = "gray", lwd = 3)
 plot(world_asia[0], add = TRUE)
 
 # creating simple features (sfg). These can't hold information other than the object's geometry.
-st_point(c(1,2))
+point1<-st_point(c(1,2))
+point2 = st_point(c(1, 3))
 st_point(c(1,2,5))
 st_point(c(1,2,5),dim="XYM") #M is an additional variable, usually accuracy
 multipoint_matrix = rbind(c(5, 2), c(1, 3), c(3, 4), c(3, 2))
@@ -110,6 +111,7 @@ lnd_sf = st_sf(lnd_attrib, geometry = lnd_geom)    # sf object
 lnd_sf
 class(lnd_sf)
 
+rm(list=ls())
 
 
 
