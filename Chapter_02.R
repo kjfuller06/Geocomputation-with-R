@@ -167,12 +167,80 @@ projInfo(type="datum")
 # projected systems are based on Cartesian coordinates on a flat surface. They are based on the geographic CRSs described above but are converted using a map projection
 projInfo(type="proj")
 
-# cRSs are defined using an epsg code, signifying a well-defined system encompassing all parameters, or using the proj4string approach, which allows you to specify the parameters
+# CRSs are defined using an epsg code, signifying a well-defined system encompassing all parameters, or using the proj4string approach, which allows you to specify the parameters
 crs_data<-rgdal::make_EPSG()
 View(crs_data)
 
+# check and set the CRS of a vector dataset
+vector_filepath = system.file("vector/zion.gpkg", package = "spDataLarge")
+new_vector = st_read(vector_filepath)
+st_crs(new_vector)
+st_transform(new_vector,crs=4326) #used to reproject a vector dataset
+new_vector = st_set_crs(new_vector, 4326) #used to reassign, doesn't reproject
 
+# check and set the CRS of a raster dataset
+projection(new_raster)
+projection(new_raster) = "+proj=utm +zone=12 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0+units=m +no_defs"
 
+#st_area includes the units of a vector
+luxembourg = world[world$name_long == "Luxembourg", ]
+st_area(luxembourg)
+attributes(st_area(luxembourg))
+
+#convert the units
+units::set_units(st_area(luxembourg), km^2)
+
+# you can't access the units of raster files. Raster files follow the units of their projectsions, so that's what you have to check. If you change the projection, the units change.
+res(new_raster)
+
+## Exercises
+# 1. Use summary() on the geometry column of the world data object. What does the output tell us about:
+summary(world['geom'])
+
+    # Its geometry type? 
+# multipolygon
+    # The number of countries? 
+# No
+    # Its coordinate reference system (CRS)? 
+# epsg 4326
+
+# 2. Run the code that ‘generated’ the map of the world in Figure 2.5 at the end of Section 2.2.4. Find two similarities and two differences between the image on your computer and that in the book
+plot(world["continent"], reset = FALSE)
+cex = sqrt(world$pop) / 10000
+world_cents = st_centroid(world, of_largest = TRUE)
+plot(st_geometry(world_cents), add = TRUE, cex = cex)
+
+    # What does the cex argument do (see ?plot)? 
+# changes the size of the centroids
+    # Why was cex set to the sqrt(world$pop) / 10000? 
+# to make it variable based on world population
+    # Bonus: experiment with different ways to visualize the global population.
+# no
+
+# Use plot() to create maps of Nigeria in context (see Section 2.2.4).
+nigeria = world[world$name_long == "Nigeria", ]
+africa = world[world$continent == "Africa", ]
+plot(st_geometry(nigeria), col = "white", lwd = 3, main = "Nigeria in context", border = "lightgrey", expandBB = c(0.5, 0.2, 0.5, 0.2))
+plot(st_geometry(world), lty = 3, add = TRUE, border = "grey")
+plot(st_geometry(nigeria), col = "yellow", add = TRUE, border = "darkgrey")
+a = africa[grepl("Niger", africa$name_long), ]
+ncentre = st_centroid(a)
+ncentre_num = st_coordinates(ncentre)
+text(x = ncentre_num[, 1], y = ncentre_num[, 2], labels = a$name_long)
+
+    # Adjust the lwd, col and expandBB arguments of plot().
+    # Challenge: read the documentation of text() and annotate the map. 
+
+# 4. Create an empty RasterLayer object called my_raster with 10 columns and 10 rows. Assign random values between 0 and 10 to the new raster and plot it.
+my_raster<-raster(nrow=10,ncol=10, vals=sample(1:10,100,replace=T))
+plot(my_raster)
+
+# 5. Read-in the raster/nlcd2011.tif file from the spDataLarge package. What kind of information can you get about the properties of this file? 
+# class, dimensions, resolution, extent, CRS, range of values
+raster_filepath = system.file("raster/nlcd2011.tif", package = "spDataLarge")
+new_raster5<- raster(raster_filepath)
+plot(new_raster5)
+new_raster5
 
 
 
