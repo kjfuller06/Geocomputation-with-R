@@ -1,4 +1,4 @@
-# lassign library path
+# assign library path
 .libPaths("C:/Users/90946112/R/win-library/3.6.2")
 
 # Load packages for chapter 2
