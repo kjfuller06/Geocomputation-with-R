@@ -9,7 +9,7 @@ library(spData)
 firehist<-st_read("Fire_NPWS_FireHistory.shp")
 firehist
 
-# Grab just the first year listed. It looks like the original dataset describes year as the couplet describing fire season, i.e. "1996-97". Need to double check***
+# Grab just the first year listed. The original dataset describes year as the couplet describing fire season, i.e. "1996-97".
 firehist$year<-as.numeric(substr(firehist$Label,1,4),format="%Y")
 
 # Grab burn type from Label and convert to factor
