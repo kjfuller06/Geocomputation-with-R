@@ -273,10 +273,12 @@ us_states %>%
   group_by(REGION) %>% 
   summarize(num = n())
 
-
-
-
-
+# 6
+us_states %>% 
+  group_by(REGION) %>% 
+  summarize(pop = sum(total_pop_15),
+            min_pop = min(total_pop_15),
+            max_pop = max(total_pop_15))
 
 
 
