@@ -170,6 +170,113 @@ plot(grain)
 # ooooh ok so you have a raster, which represents categories as integers for fast computation. Then you have the Raster Attribute Table (RAT) for reference or look-up table
 levels(grain)[[1]] = cbind(levels(grain)[[1]], wetness = c("wet", "moist", "dry"))
 levels(grain)
+grain
+
+# look at the values for specific cells (why would you ever want to do this?)
+factorValues(grain, grain[c(1, 11, 35)])
+
+## 3.3.1
+# subsetting uses the classic base index []
+# row 1, column 1
+elev[1,1]
+# cell ID 1
+elev[1]
+
+# values() and getValues() are used to extract all values or complete rows. For mulit-layered raster objects (stack or brick), this returns the cell values for each raster in the stack. Example: stack(elev, grain)[1] returns a matrix with one row and two columns, the first cell values for elev and grain. You can also subset a multi-layer raster using raster::subset().
+r_stack = stack(elev, grain)
+names(r_stack) = c("elev", "grain")
+# three ways to extract a layer of a stack
+raster::subset(r_stack, "elev")
+r_stack[["elev"]]
+r_stack$elev
+
+# change the value of one cell
+elev[1, 1] = 0
+elev[]
+# or multiple values
+elev[1, 1:2] = 0
+elev[]
+
+## 3.3.2
+# calculate quick stats
+cellStats(elev, sd)
+# calculate stats for a stack or brick
+summary(brick(elev, grain))
+
+# boxplot(), density(), hist() and pairs() work on raster objects as well
+hist(elev)
+# if other visualisations don't work with raster objects, just use values or getValues of [] to extract the values first, then visualise
+
+## 3.4 Exercises
+data(us_states)
+data(us_states_df)
+
+# 1
+us_states_name = us_states[, "NAME"]
+class(us_states_name)
+# solution from the book has same result
+us_states_name = us_states %>% dplyr::select(NAME)
+class(us_states_name)
+
+# 2
+library(tidyselect)
+us_states[,grep("pop",names(us_states))]
+us_states %>% 
+  select(contains("pop"))
+us_states %>% 
+  select(starts_with("total_pop"))
+# solutions. note: it's important to include dplyr:: infront of "select" because there is conflict with this function
+us_states %>% dplyr::select(total_pop_10, total_pop_15)
+us_states %>% dplyr::select(starts_with("total_pop"))
+us_states %>% dplyr::select(contains("total_pop"))
+
+# 3
+# find
+us_states[us_states$REGION=="Midwest",]
+midwest = us_states %>% 
+  filter(REGION == "Midwest")
+# plot
+plot(midwest[,"NAME"])
+
+# find
+# gave up. solution:
+west = us_states %>% 
+  filter(REGION == "West", AREA < units::set_units(250000, km^2),total_pop_15 > 5000000)
+# plot
+plot(west[,"REGION"])
+
+#find
+south = us_states %>% 
+  filter(REGION == "South", AREA > units::set_units(150000, km^2),total_pop_15 > 7000000)
+# also this option from solutions
+us_states %>% 
+  filter(REGION == "South", as.numeric(AREA) > 150000, total_pop_15 > 7000000)
+# plot
+us = world %>% 
+  filter(continent == "North America")
+plot(us$geom)
+plot(south[, "total_pop_15"], add = TRUE)
+# IDK can't get it to plot over the us_states sf. No solution provided for plotting. Managed to do it with the world dataset.
+
+# 4
+totalpop = sum(us_states$total_pop_15)
+totalpop
+minmax = c(min(us_states$total_pop_15),max(us_states$total_pop_15))
+minmax
+# solution
+us_states %>% summarize(total_pop = sum(total_pop_15),
+                        min_pop = min(total_pop_15),
+                        max_pop = max(total_pop_15))
+
+# 5
+us_states %>% 
+  group_by(REGION) %>% 
+  summarize(num = n())
+
+
+
+
+
 
 
 
