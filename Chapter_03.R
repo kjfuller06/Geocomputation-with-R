@@ -280,12 +280,73 @@ us_states %>%
             min_pop = min(total_pop_15),
             max_pop = max(total_pop_15))
 
+# 7
+us_states_stats = us_states %>% 
+  left_join(us_states_df, by = c("NAME" = "state"))
+class(us_states_stats)
 
+# 8
+us_states_df %>% 
+  anti_join(us_states, by = c("state" = "NAME"))
 
+# 9 
+us_states2 = us_states %>% 
+  mutate(dens_15 = total_pop_15/AREA, 
+         dens_10 = total_pop_10/AREA)
+us_states2
 
+# 10
+us_states2 = us_states2 %>% 
+  mutate(change = ((dens_15-dens_10)/dens_10)*100)
+plot(us_states2["change"])
 
+# 11
+names(us_states) = tolower(names(us_states))
+# from solutions
+us_states %>%
+  setNames(tolower(colnames(.)))
 
+# 12
+us_states_sel = us_states_stats %>% 
+  select(Income = "median_income_15")
 
+# 13- worded badly, had to change because of solutions code
+us_states_sel2 = us_states_stats %>% 
+  mutate(change = median_income_15 - median_income_10)
+us_states_sel3 = us_states_sel2 %>% 
+  group_by(REGION) %>% 
+  summarize(minin = min(change),
+            maxin = max(change),
+            avgin = mean(change))
+us_states_sel4 = us_states_sel3 %>% 
+  group_by(REGION) %>% 
+  summarize(avginin = mean(avgin)) %>% 
+  top_n(n = 1, wt = avginin)
+# from solutions
+us_states_sel3 %>%
+  filter(avgin == max(avgin)) %>%
+  pull(REGION) %>%
+  as.character()
 
+# 14, had to get the answer from solutions; had something to do with the xmn, xmx, etc. functions
+test = raster(nrows = 9, ncols = 9, res = 0.5, xmn = 0, xmx = 4.5,
+              ymn = 0, ymx = 4.5, vals = sample(81, x = c(1:10), replace = TRUE))
+plot(test)
+# extract values from the four corners (from solutions with a correction); using cell IDs
+test[c(1, 9, (81 - 8), 81)]
+# OR using row indexing
+test[c(1, nrow(test)), c(1, ncol(test))]
+
+# 15- straight from solutions
+grain_size = c("clay", "silt", "sand")
+grain = raster(nrow = 6, ncol = 6, res = 0.5,
+               xmn = -1.5, xmx = 1.5, ymn = -1.5, ymx = 1.5,
+               vals = factor(sample(grain_size, 36, replace = TRUE),
+                             levels = grain_size))
+cellStats(grain, modal) %>%
+  factorValues(grain, .)
+factorValues(grain, modal(values(grain)))
+
+# 16- data not available
 
 
