@@ -79,6 +79,47 @@ random_joined = st_join(random_points, world["name_long"])
 plot(world$geom)
 plot(random_joined$geometry, add = TRUE, col = "red", pch = 4)
 
+# join two non-overlapping point layers. We want the attributes of one layer to be linked with the point locations of another.
+# are any two points the same?
+any(st_touches(cycle_hire, cycle_hire_osm, sparse = FALSE))
+# reproject to same CRS
+cycle_hire_P = st_transform(cycle_hire, 27700)
+cycle_hire_osm_P = st_transform(cycle_hire_osm, 27700)
+# keep all records within 20m of the desired point locations
+sel = st_is_within_distance(cycle_hire_P, cycle_hire_osm_P, dist = 20)
+summary(lengths(sel) > 0)
+# join
+z = st_join(cycle_hire_P, cycle_hire_osm_P, st_is_within_distance, dist = 20)
+nrow(cycle_hire)
+nrow(z)
+# the joined layer has more entries than the original target layer because the join created duplicates. We'll take the means in order to aggregate them
+z = z %>% 
+  group_by(id) %>% 
+  summarize(capacity = mean(capacity))
+nrow(z) == nrow(cycle_hire)
+# check by plotting
+plot(cycle_hire_osm["capacity"])
+plot(z["capacity"])
+
+# 4.2.5 spatial data aggregation
+# find the mean height of high points in each region of NZ. nz_height contains the high points. nz contains the regions.
+nz_avheight = aggregate(x = nz_height, by = nz, FUN = mean)
+# how did it do that? nz has a whole bunch of columns and none of them is "region". None of them are the same between the layers.
+## ok. I think because nz is a list of 16 polygons (multipolygons), and nz_height is a bunch of points, it found the mean value of all listed points within the polygons. So some came back as NAs if there aren't any high points in that polygon and some came back as averages if there were more than 1. There are 16 multipolygons in the result.
+# OR
+nz_avheight2 = nz %>%
+  st_join(nz_height) %>%
+  group_by(Name) %>%
+  summarize(elevation = mean(elevation, na.rm = TRUE))
+# result looks slightly different because it's a tibble, rather than a df
+
+# NOTE: there are sometimes issues where polygons don't line up exactly. For example, an LGA inside an SUA. Sometimes an LGA will be part of two different SUAs. Coping with this is a whole subdiscipline of geopreocessing. One solution is to divide summed values attributed to the straddling polygon using the weight of area that is divided by the split. In other words- a larger area on one side of the split would receive the same proportion of a summed value. If it's an average, this is applicable.
+# use st_interpolate_aw() to split summary values between two polygons weighted by their area.
+agg_aw = st_interpolate_aw(incongruent[, "value"], aggregating_zones,
+                           extensive = TRUE)
+agg_aw$value
+
+
 
 
 
