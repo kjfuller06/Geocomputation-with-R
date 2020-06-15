@@ -8,6 +8,8 @@ library(spData)
 canterbury = nz %>% 
   filter(Name == "Canterbury")
 canterbury_height = nz_height[canterbury, ]
+plot(st_geometry(nz))
+plot(st_geometry(canterbury), add = TRUE, col = "yellow")
 
 # spatial intersects are done using subsetting, with the default being "intersect". Including "op =" as the third argument allows you to change the default spatial function (or topographical operator)
 # disjoint returns the polygons in nz_height that do not intersect canterbury
@@ -105,8 +107,7 @@ plot(z["capacity"])
 # find the mean height of high points in each region of NZ. nz_height contains the high points. nz contains the regions.
 nz_avheight = aggregate(x = nz_height, by = nz, FUN = mean)
 # how did it do that? nz has a whole bunch of columns and none of them is "region". None of them are the same between the layers.
-## ok. I think because nz is a list of 16 polygons (multipolygons), and nz_height is a bunch of points, it found the mean value of all listed points within the polygons. So some came back as NAs if there aren't any high points in that polygon and some came back as averages if there were more than 1. There are 16 multipolygons in the result.
-# OR
+## ok. I think because nz is a list of 16 polygons (multipolygons), and nz_height is a bunch of points, it found the mean value of all listed points within the polygons. So some came back as NAs if there aren't any high points in that polygon and some came back as averages if there were more than 1. There are 16 multipolygons in the result. That's a pretty complex procedure for one line of code. Definitely want to keep this in mind but I think I prefer the tidy version:
 nz_avheight2 = nz %>%
   st_join(nz_height) %>%
   group_by(Name) %>%
@@ -118,6 +119,97 @@ nz_avheight2 = nz %>%
 agg_aw = st_interpolate_aw(incongruent[, "value"], aggregating_zones,
                            extensive = TRUE)
 agg_aw$value
+
+# 4.2.6 distance relations
+# calculate heightest point in NZ
+nz_heighest = nz_height %>% 
+  top_n(n = 1, wt = elevation)
+# calculate centroid for canterbury shire
+canterbury_centroid = st_centroid(canterbury)
+# what's the distance between the centroid and the heighest point?
+st_distance(nz_heighest, canterbury_centroid)
+# let's plot
+plot(st_geometry(nz))
+plot(st_geometry(nz_heighest), add = TRUE, pch = 21, col = "black", bg = "blue")
+plot(st_geometry(canterbury_centroid), add = TRUE, pch = 21, col = "black", bg = "red")
+
+# st_distance returns a matrix, even when there's only one returned value. It can also return a matrix of multiple calculations:
+co = filter(nz, grepl("Canter|Otag", Name))
+st_distance(nz_height[1:3, ], co)
+# ^this calculates all combinations of distances between the three points selected from nz_height and the two polygons in "co"
+# the last two values in the second column are zero because the second two points are within the second polygon. st_distance calculates the distance between points and <i>any part of</i> polygons. Verfiy with:
+plot(st_geometry(co)[2])
+plot(st_geometry(nz_height)[2], add = TRUE, col = "red")
+plot(st_geometry(nz_height)[3], add = TRUE, col = "blue")
+
+## 4.3 spatial operations on raster data
+# 4.3.1 spatial subsetting
+# use coordinates to extract the value at a specific point
+# get the cell ID
+id = cellFromXY(elev, xy = c(0.1, 0.1))
+elev[id]
+# OR
+raster::extract(elev, data.frame(x = 0.1, y = 0.1))
+# ^be careful with extract(), it is also a function tidyverse
+
+# clip raster using another raster
+clip = raster(xmn = 0.9, xmx = 1.8, ymn = -0.45, ymx = 0.45,
+              res = 0.3, vals = rep(1, 9))
+elev[clip]
+# plot
+plot(elev)
+plot(clip, add = TRUE, col = adjustcolor("yellow", alpha = 0.5))
+# ^this seems odd. clip doesn't overlap completely with any pixels in elev. It intersects four pixels but the subset returns two values. Maybe it has to intersect a certain threshold of the area of the pixels to select them?
+
+# subset into a spatial object instead
+elev[1:2, drop = FALSE]    # spatial subsetting with cell IDs
+elev[1, 1:2, drop = FALSE] # spatial subsetting by row,column indices
+
+# create raster mask- values are randomly assigned "NA" and "TRUE"
+rmask = elev 
+values(rmask) = sample(c(NA, TRUE), 36, replace = TRUE)
+# spatial subsetting using a mask
+elev[rmask, drop = FALSE]           # with [ operator
+mask(elev, rmask)                   # with mask()
+overlay(elev, rmask, fun = "max")   # with overlay
+
+# 4.3.2 map algebra
+# Local- per-cell operations
+# Focal or neighborhood operations- usually a 3x3 cell block summary
+# Zonal- just like focal but with irregular shapes
+# Global- whole raster or multiple raster summary
+
+# 4.3.3 local operations
+# reclassify a continuous variable into categorical
+# first create a reclassification matrix, where the first column is the low value in each category, the second column is the high value in each category and the third column is the replacement value
+rcl = matrix(c(0, 12, 1, 12, 24, 2, 24, 36, 3), ncol = 3, byrow = TRUE)
+recl = reclassify(elev, rcl = rcl)
+
+# simple examples of raster calculations supported by Raster. Google vignette Raster for further info
+elev + elev
+elev^2
+log(elev)
+elev > 5
+
+# calc() and overlay() are more efficient so these should be used for large raster files. They also allow you to directly store an output file.
+
+# NDVI is a local operation
+# NDVI = (NIR - Red) / (NIR + Red)
+
+# 4.3.4 focal operations
+# considers the neighbourhood of a cell- also called kernel, filter or moving window
+# calculate the minimum for each cell from a window of 3x3. The weight of all cells in the filtering matrix are equal and set to 1 but this can be changed.
+r_focal = focal(elev, w = matrix(1, nrow = 3, ncol = 3), fun = min)
+plot(elev)
+plot(r_focal, add = TRUE)
+# ^NOTE: the resulting raster retains the same spatial extent and dimensions of the original raster file but the outer edges of pixels become NAs for obvious reasons.
+
+# focal operations can smooth or accentuate images and are an integral part of image processing.
+
+
+
+
+
 
 
 
