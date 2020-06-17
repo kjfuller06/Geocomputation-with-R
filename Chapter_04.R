@@ -206,6 +206,33 @@ plot(r_focal, add = TRUE)
 
 # focal operations can smooth or accentuate images and are an integral part of image processing.
 
+# 4.3.5 zonal operations
+# this is like a classic method for watershed analyses
+# you can use attributes to calculate statistics- but how would you input a watershed?
+## you would need to assign IDs to all the watersheds and calculate the stats for each ID
+z = zonal(elev, grain, fun = "mean") %>%
+  as.data.frame()
+z
+
+# 4.3.6 global operations and distances
+# this section is confusing. One example of a global operation is to calculate distance between one pixel and all other pixels. You can also weight these distances using elevation, for example. This allows for calculation of Euclidean distances.
+# they then caution that functions used for vectors and rasters can use the same word but have different meanings. Aggergating vectors is a summary exercise. Aggregating rasters increases the spatial resolution.
+
+# 4.3.7 merging rasters
+# this sections uses the term "scene" for some things and I don't quite get it. "The corresponding imagery is often divided into scenes covering a specific spatial extent. Frequently, a study area covers more than one scene." I think this refers to various "passes" of satellites that are stitched together. It might also refer to broken up chunks of rasters that are divided for downloading and processing convenience. Googling didn't help greatly but it might also mean something about 3D data?
+# load scenes for Austria and Switzerland 
+aut = getData("alt", country = "AUT", mask = TRUE)
+ch = getData("alt", country = "CHE", mask = TRUE)
+aut_ch = merge(aut, ch)
+plot(aut_ch)
+# if rasters overlap, merge() uses the first raster to fill the overlapping space. mosaic() let's you decide what to do with the overlapping area- such as compute the mean between the two rasters.
+## gdalUtils::mosaic_rasters() is faster, and therefore recommended if you have to merge a multitude of large rasters stored on disk.
+
+### see this section for more advice on scene blending and remote sensing resources for landsat, etc.
+
+# 4.4 exercises
+# 1
+
 
 
 
