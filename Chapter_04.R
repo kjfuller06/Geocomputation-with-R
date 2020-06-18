@@ -3,6 +3,9 @@ library(sf)
 library(raster)
 library(dplyr)
 library(spData)
+library(tmap)
+library(classInt)
+library(RStoolbox)
 
 # 4.2.1 geographical subsetting
 canterbury = nz %>% 
@@ -235,7 +238,6 @@ plot(aut_ch)
 a <- st_intersects(canterbury, nz_height)
 # FAIL
 # from solutions. Wow this is great! Interactive maps!!
-library(tmap)
 # set tmap mode to interactive viewing
 tmap_mode("view")
 # plot nz and nz_height
@@ -284,7 +286,6 @@ zonal(dem, recl, fun = "mean") %>%
 zonal(ndvi, recl, fun = "mean") %>% 
   as.data.frame()
 # from solutions
-library(classInt)
 data(dem, package = "RQGIS")
 data(ndvi, package = "RQGIS")
 summary(dem)
@@ -317,17 +318,31 @@ plot(rast, col = c("black", "white", "red", "blue"))
 # ^cool, so for colouring a raster, you actually don't have to apply values. Just decide on the number of colours you want and you get it.
 
 # 6
-
-
-
-
+landsat <- raster(system.file("raster/landsat.tif", package="spDataLarge"))
+plot(landsat)
+# I didn't know where to go from here because I don't know what landsat depicts so I just looks up the answer
+# from solutions -> apparently .tif files can store multiple image layers in one.
+file = system.file("raster/landsat.tif", package = "spDataLarge")
+r = stack(file)
+# compute NDVI manually -> this calculates ndvi for each pixel
+ndvi = (r[["landsat.4"]] - r[["landsat.3"]]) / (r[["landsat.4"]] + r[["landsat.3"]])
+# compute NDVI with the help of RStoolbox
+ndvi_rstoolbox = RStoolbox::spectralIndices(r, red = 3, nir = 4, indices = "NDVI")
+all.equal(ndvi, ndvi_rstoolbox)
+# NEAT!
 
 # 7
+a <- ccodes()
+a[a$NAME == "Spain",]
+esp = getData("alt", country = "ESP", mask = TRUE)
 
+# Oh! Ok, so what I need to do is calculate distances to the coatlines FIRST, then use the esp raster to clip the output. This will give me the values just for Spain.
 
-
-
-
+# r3 <- mask(is.na(r2), r2, maskvalue=1, updatevalue=NA)
+# # Calculate distance to nearest non-NA pixel
+# d <- distance(r3)
+# # Optionally set non-land pixels to NA (otherwise values are "distance to non-land")
+# d <- d*r2
 
 
 
