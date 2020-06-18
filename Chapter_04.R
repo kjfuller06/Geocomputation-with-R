@@ -232,9 +232,97 @@ plot(aut_ch)
 
 # 4.4 exercises
 # 1
+a <- st_intersects(canterbury, nz_height)
+# FAIL
+# from solutions. Wow this is great! Interactive maps!!
+library(tmap)
+# set tmap mode to interactive viewing
+tmap_mode("view")
+# plot nz and nz_height
+qtm(nz) + qtm(nz_height)
+# select only canterbury from nz regions
+canterbury = nz %>% 
+  filter(Name == "Canterbury")
+# perform an intersect
+canterbury_height = nz_height[canterbury, ]
+nrow(canterbury_height)
+
+# 2
+nz_avheight2 = nz %>%
+  st_join(nz_height) %>%
+  group_by(Name) %>%
+  summarize(num = length(t50_fid)) %>% 
+  top_n(2, wt = num)
+# from solutions
+nz_height_count = aggregate(nz_height, nz, length)
+nz_height_combined = cbind(nz, count = nz_height_count$elevation)
+nz_height_combined %>%
+  st_set_geometry(NULL) %>%
+  dplyr::select(Name, count) %>%
+  arrange(desc(count)) %>%
+  slice(2)
+
+# 3
+# accidentally looked at solution 3 when copying 2. This is from solutions
+nz_height_combined %>%
+  st_set_geometry(NULL) %>%
+  dplyr::select(Name, count) %>%
+  arrange(desc(count)) %>%
+  na.omit()
+
+# 4
+# data(dem, package = "RQGIS") <- this data repository was archived. I downloaded it from CRAN as a tar.gz ile, then used untar("RQGIS_1.0.4.tar/RQGIS_1.0.4.tar") to unzip it
+load(file = "RQGIS/data/dem.rda")
+rcl = matrix(c(237, 523, 1, 523, 808, 2, 808, 1094, 3), ncol = 3, byrow = TRUE)
+recl = reclassify(dem, rcl = rcl)
+plot(recl)
+## NOTE: I had to lower the minimum elevation value in reclassify() BELOW the minimum in the raster to capture all values
+# data(ndvi, package = "RQGIS") <- another old file
+load(file = "RQGIS/data/ndvi.rda")
+zonal(dem, recl, fun = "mean") %>% 
+  as.data.frame()
+zonal(ndvi, recl, fun = "mean") %>% 
+  as.data.frame()
+# from solutions
+library(classInt)
+data(dem, package = "RQGIS")
+data(ndvi, package = "RQGIS")
+summary(dem)
+brk = classIntervals(values(dem), n = 3)$brk
+# also try
+# breask = classIntervals(values(dem), n = 3, style = "fisher")
+# construct reclassification matrix
+rcl = matrix(c(brk[1] - 1, brk[2], 1, brk[2], brk[3], 2, brk[3], brk[4], 3),
+             ncol = 3, byrow = TRUE)
+recl = reclassify(dem, rcl = rcl)
+zonal(stack(dem, ndvi), recl, fun = "mean")
+
+# 5
+rast <- raster(system.file("external/rlogo.grd", package = "raster"))
+# ok this is really interesting. The weight matrices in focal() can be adjusted for all kinds of calculations. This includes "line detection" requested here. There's a bit of information about this in ?focal. Definitely worth reading more about it. Specifically, the help page mentions that in focal(x, w, fun), it's more computationally efficient to adjust the weight matrix in order to change the calculation than it is to adjust fun = . The default calculation is sum. So if you apply a matrix of w = matrix(1/9, nc = 3, nr = 3), you get a 3 x 3 window that sums up each value divided by 9- which gives you the mean. This is faster than focal(x, w = matrix(1, 3, 3), fun = mean).
+# sobel filter for line detection
+fx=matrix(c(-1,-2,-1,0,0,0,1,2,1) / 4, nrow=3)
+a <- focal(rast, w = fx)
+plot(rast)
+plot(a)
+# from solutions
+r = raster(system.file("external/rlogo.grd", package = "raster"))
+# compute the Sobel filter
+filter = matrix(c(1, 2, 1, 0, 0, 0, -1, -2, -1) / 4, nrow = 3)
+sobel = focal(r, w = filter)
+plot(sobel, col = c("black", "white"))
+# ^this answer swaps the positives and negatives in the sobel filter. The one I found on the ?focal help page was different. It's ever so slightly different. But if you swap "black" and "white" during plotting they look almost exactly the same. Also works for rast. Just makes the image black and white using the median colour as the switch point
+plot(rast, col = c("black", "white"))
+plot(rast, col = c("black", "white", "red", "blue"))
+# ^cool, so for colouring a raster, you actually don't have to apply values. Just decide on the number of colours you want and you get it.
+
+# 6
 
 
 
+
+
+# 7
 
 
 
