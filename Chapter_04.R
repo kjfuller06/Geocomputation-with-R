@@ -332,17 +332,40 @@ all.equal(ndvi, ndvi_rstoolbox)
 # NEAT!
 
 # 7
-a <- ccodes()
-a[a$NAME == "Spain",]
-esp = getData("alt", country = "ESP", mask = TRUE)
-
-# Oh! Ok, so what I need to do is calculate distances to the coatlines FIRST, then use the esp raster to clip the output. This will give me the values just for Spain.
-
-# r3 <- mask(is.na(r2), r2, maskvalue=1, updatevalue=NA)
-# # Calculate distance to nearest non-NA pixel
-# d <- distance(r3)
-# # Optionally set non-land pixels to NA (otherwise values are "distance to non-land")
-# d <- d*r2
+# this was just too complicated. They are only using the area of Spain to calculate distance to the coast but there is no ocean file. They are just calculating distance to the edge of Spain. Spain isn't an island. Anyway, I just ripped this from solutions.
+## ohhhh ok so the dem from getData() is actually square tile of DEM data that is centered on Spain. So they used an outline of Spain to fix the issue I complained about above.
+# find out the ISO_3 code of Spain
+dplyr::filter(ccodes(), NAME %in% "Spain")
+# retrieve a dem of Spain
+dem = getData("alt", country = "ESP", mask = FALSE)
+# change the resolution to decrease computing time
+agg = aggregate(dem, fact = 5)
+poly = getData("GADM", country = "ESP", level = 1)
+plot(dem)
+plot(poly, add = TRUE)
+# visualize NAs. 
+plot(is.na(agg)) # <- this doesn't work perfectly. The tile is a little too small. It doesn't extend all the way to the ocean. If I wanted to be really accurate, I could select a subregion from getData(). There might also be bbox options in getData().
+# construct a distance input raster
+# we have to set the land cells to NA and the sea cells to an arbitrary value since 
+# raster::distance computes the distance to the nearest non-NA cell -> the below code turns the raster "agg" into a binary raster based on whether the values are "NA" or filled (NA becomes TRUE; numbers become FALSE).
+dist = is.na(agg)
+cellStats(dist, summary)
+# convert land cells into NAs and sea cells into 1s. This flips the binary; cells progressed NA -> TRUE -> 1 and numberic -> FALSE -> NA
+dist[dist == FALSE] = NA
+dist[dist == TRUE] = 1
+plot(dist)
+# compute distance to nearest non-NA cell
+dist = raster::distance(dist)
+# just keep Spain
+dist = mask(dist, poly)
+# convert distance into km
+dist = dist / 1000
+# now let's weight each 100 altitudinal meters by an additionaly distance of 10 km
+agg = mask(agg, poly)
+agg[agg < 0] = 0
+weight = dist + agg / 100 * 10
+# plot(weight - dist) <- this doesn't make any sense. Unless they were just trying to show that you get the original agg (converted to km) when you remove dist from weight *shrug*
+plot(weight)
 
 
 
