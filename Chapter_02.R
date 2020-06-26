@@ -89,6 +89,9 @@ gemetrycollection_list = list(st_multipoint(multipoint_matrix),
 st_geometrycollection(gemetrycollection_list)
 
 # combine two simple features (sfg) into a one single object with two features called a simple feature geometry column (sfc). Works for all sfg objects, including sfg's of different geometry types.
+# sf -> sfc with attributes dataframe
+# sfc -> two or more sfg's (can possess a CRS)
+# sfg -> coordinates for a single geomtry (no attributes, no CRS)
 multilinestring_list1 = list(rbind(c(1, 5), c(4, 4), c(4, 1), c(2, 2), c(3, 2)), 
                              rbind(c(1, 2), c(2, 4)))
 multilinestring1 = st_multilinestring((multilinestring_list1))
